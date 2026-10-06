@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-i18n="title">YTMP3 - YouTube / Instagram 转 MP3 / MP4</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0e0e11">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+         background: #0e0e11; color: #ececee; min-height: 100vh;
+         display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
+  .wrap { width: 100%; max-width: 560px; }
+  h1 { font-size: 28px; text-align: center; margin-bottom: 6px; }
+  h1 .r { color: #ff3b30; } h1 .w { color: #fff; }
+  .sub { text-align: center; color: #8b8b95; font-size: 14px; margin-bottom: 28px; }
+  .card { background: #16161b; border: 1px solid #26262e; border-radius: 16px; padding: 28px; }
+  label { display: block; font-size: 13px; color: #9a9aa5; margin-bottom: 8px; }
+  input[type=text] { width: 100%; background: #0e0e11; border: 1px solid #2c2c35; border-radius: 10px;
+    color: #ececee; padding: 13px 14px; font-size: 15px; outline: none; margin-bottom: 18px; }
+  input[type=text]:focus { border-color: #5b5bd6; }
+  .fmt { display: flex; gap: 10px; margin-bottom: 20px; }
+  .fmtcol { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .fmtcol button { padding: 11px; border-radius: 10px; border: 1px solid #2c2c35;
+    background: #0e0e11; color: #9a9aa5; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .fmtcol button.active { background: #5b5bd6; border-color: #5b5bd6; color: #fff; }
+  .codelabel { font-size: 12px; color: #77777f; margin: 0; }
+  select.codec { width: 100%; background: #0e0e11; border: 1px solid #2c2c35; border-radius: 10px;
+    color: #ececee; padding: 10px 12px; font-size: 14px; outline: none; }
+  select.codec:focus { border-color: #5b5bd6; }
+  #btnGo { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 16px;
+    font-weight: 700; background: #ff3b30; color: #fff; cursor: pointer; }
+  #btnGo:hover:not(:disabled) { background: #e03329; }
+  #btnGo:disabled { opacity: .55; cursor: wait; }
+  .prog { margin-top: 22px; display: none; }
+  .prog .t { font-size: 14px; color: #bdbdc7; margin-bottom: 8px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; }
+  .bar { height: 8px; background: #26262e; border-radius: 4px; overflow: hidden; }
+  .bar > div { height: 100%; width: 0; background: linear-gradient(90deg,#5b5bd6,#8b8bf0);
+    border-radius: 4px; transition: width .4s; }
+  .st { font-size: 13px; color: #8b8b95; margin-top: 8px; }
+  #dl { display: none; margin-top: 22px; text-align: center; }
+  #dl a { display: inline-block; padding: 13px 42px; background: #1f9d55; color: #fff;
+    border-radius: 10px; font-size: 16px; font-weight: 700; text-decoration: none; }
+  #dl a:hover { background: #1a8749; }
+  #dl .again { display: block; margin-top: 12px; font-size: 13px; color: #8b8b95;
+    cursor: pointer; background: none; border: none; }
+  #err { display: none; margin-top: 18px; padding: 12px 14px; background: #3d1616;
+    border: 1px solid #6b2222; color: #ffaaaa; border-radius: 10px; font-size: 14px; }
+  .foot { margin-top: 28px; font-size: 12px; color: #55555e; text-align: center; line-height: 1.8; }
+  .admin { margin-top: 18px; padding-top: 16px; border-top: 1px solid #26262e;
+    display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 12px; color: #77777f; }
+  .admin button { padding: 7px 14px; border-radius: 8px; border: 1px solid #2c2c35;
+    background: #0e0e11; color: #bdbdc7; font-size: 12px; cursor: pointer; }
+  .admin button:hover:not(:disabled) { border-color: #5b5bd6; color: #fff; }
+  .admin button:disabled { opacity: .5; cursor: wait; }
+  #toasts { position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; gap: 10px; z-index: 99; width: min(420px, 92vw); }
+  .toast { padding: 13px 15px; border-radius: 10px; font-size: 14px; line-height: 1.5;
+    animation: tslide .25s ease; box-shadow: 0 4px 20px rgba(0,0,0,.5); }
+  @keyframes tslide { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; } }
+  .toast.ok { background: #14331f; border: 1px solid #1f5c33; color: #a7e8bd; }
+  .toast.warn { background: #3a2c10; border: 1px solid #6b5118; color: #ffd88a; }
+  .toast.err { background: #3d1616; border: 1px solid #6b2222; color: #ffaaaa; }
+  .toast.info { background: #1a2340; border: 1px solid #2a3a6b; color: #a9c0ff; }
+  .lang { position: fixed; top: 14px; right: 14px; display: flex; gap: 6px; z-index: 100; }
+  .lang button { padding: 6px 12px; border-radius: 8px; border: 1px solid #2c2c35;
+    background: #16161b; color: #9a9aa5; font-size: 12px; cursor: pointer; }
+  .lang button.active { background: #5b5bd6; border-color: #5b5bd6; color: #fff; }
+</style>
+</head>
+<body>
+<div id="toasts"></div>
+<div class="lang">
+  <button id="langZh" class="active">中文</button>
+  <button id="langEn">En</button>
+</div>
+<div class="wrap">
+  <h1><span class="r">YT</span><span class="w">MP3</span></h1>
+  <div class="sub" data-i18n="sub">YouTube / Instagram 视频转 MP3 / MP4 &middot; 自建私有服务</div>
+  <div class="card" id="formCard">
+    <label data-i18n="labelUrl">粘贴 YouTube / Instagram 视频链接</label>
+    <input type="text" id="url" data-i18n-ph="phUrl" placeholder="YouTube 或 Instagram 视频链接…" autocomplete="off">
+    <div class="fmt">
+      <div class="fmtcol">
+        <button id="fAudio" class="active" data-i18n="btnAudio">MP3（音频）</button>
+        <label class="codelabel" data-i18n="labelBitrate">音频码率</label>
+        <select class="codec" id="audioBitrate">
+          <option value="128K">128 kbps</option>
+          <option value="192K">192 kbps</option>
+          <option value="256K">256 kbps</option>
+          <option value="320K" selected>320 kbps</option>
+        </select>
+      </div>
+      <div class="fmtcol">
+        <button id="fVideo" data-i18n="btnVideo">MP4（视频）</button>
+        <label class="codelabel" data-i18n="labelRes">视频分辨率</label>
+        <select class="codec" id="videoRes">
+          <option value="2160" data-i18n="res2160">2160p（4K）</option>
+          <option value="1440" data-i18n="res1440">1440p（2K）</option>
+          <option value="1080" data-i18n="res1080" selected>1080p（高清）</option>
+          <option value="720" data-i18n="res720">720p</option>
+          <option value="480" data-i18n="res480">480p</option>
+          <option value="360" data-i18n="res360">360p（流畅）</option>
+        </select>
+      </div>
+    </div>
+    <button id="btnGo" data-i18n="btnGo">开始转换</button>
+    <div class="prog" id="prog">
+      <div class="t" id="pTitle"></div>
+      <div class="bar"><div id="pBar"></div></div>
+      <div class="st" id="pStatus"></div>
+    </div>
+    <div id="dl">
+      <a id="dlLink" href="#" data-i18n="dlLink">下载文件</a>
+      <button class="again" id="btnAgain" data-i18n="btnAgain">再转一个</button>
+    </div>
+    <div id="err"></div>
+  </div>
+  <div class="admin">
+    <span id="ytVer">yt-dlp …</span>
+    <button id="btnVer" data-i18n="btnVer">检测版本</button>
+    <button id="btnUpd" data-i18n="btnUpd">升级 yt-dlp</button>
+  </div>
+  <div class="foot" data-i18n="foot">仅供个人学习使用 &middot; 转换文件保留 1 小时后自动清理</div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+
+/* ===== 中英双语 ===== */
+const I18N = {
+zh: {
+  title: 'YTMP3 - YouTube / Instagram 转 MP3 / MP4',
+  sub: 'YouTube / Instagram 视频转 MP3 / MP4 · 自建私有服务',
+  labelUrl: '粘贴 YouTube / Instagram 视频链接',
+  phUrl: 'YouTube 或 Instagram 视频链接…',
+  btnAudio: 'MP3（音频）', btnVideo: 'MP4（视频）',
+  labelBitrate: '音频码率', labelRes: '视频分辨率',
+  res2160: '2160p（4K）', res1440: '1440p（2K）', res1080: '1080p（高清）',
+  res720: '720p', res480: '480p', res360: '360p（流畅）',
+  btnGo: '开始转换', btnWorking: '转换中…', dlLink: '下载文件', btnAgain: '再转一个',
+  btnVer: '检测版本', btnUpd: '升级 yt-dlp',
+  foot: '仅供个人学习使用 · 转换文件保留 1 小时后自动清理',
+  stPending: '排队中…', stFetching: '读取视频信息…', stDownloading: '下载中…',
+  stDone: '完成', stError: '出错', stPreparing: '准备中…', stComplete: '转换完成',
+  convertingAudio: '转换 {codec} {br} 中…', convertingVideo: '转换 {codec} {res}p 中…',
+  errNoUrl: '请先粘贴视频链接', errFailed: '转换失败：', reqFail: '请求失败：',
+  stCheckFail: '状态查询失败', verHasNew: '（有新版 {v}）',
+  verCheckFail: '检测失败：', verNew: '发现新版本 <b>{v}</b>，当前 {cur}，建议升级',
+  verLatest: '已是最新版本：', verUnknown: '当前版本：{v}<br>无法获取最新版（网络问题）',
+  confirmUpd: '确定升级 yt-dlp 到最新版吗？', upgrading: '正在升级，请稍候…',
+  updFail: '升级失败：', updOk: '升级成功：{o} → <b>{n}</b>',
+},
+en: {
+  title: 'YTMP3 - YouTube / Instagram to MP3 / MP4',
+  sub: 'Convert YouTube / Instagram videos to MP3 / MP4 · Self-hosted',
+  labelUrl: 'Paste a YouTube / Instagram video link',
+  phUrl: 'YouTube or Instagram video link…',
+  btnAudio: 'MP3 (Audio)', btnVideo: 'MP4 (Video)',
+  labelBitrate: 'Audio bitrate', labelRes: 'Video resolution',
+  res2160: '2160p (4K)', res1440: '1440p (2K)', res1080: '1080p (HD)',
+  res720: '720p', res480: '480p', res360: '360p',
+  btnGo: 'Start Convert', btnWorking: 'Converting…', dlLink: 'Download file', btnAgain: 'Convert another',
+  btnVer: 'Check version', btnUpd: 'Update yt-dlp',
+  foot: 'For personal study use only · Files auto-deleted after 1 hour',
+  stPending: 'Queued…', stFetching: 'Fetching video info…', stDownloading: 'Downloading…',
+  stDone: 'Done', stError: 'Error', stPreparing: 'Preparing…', stComplete: 'Conversion complete',
+  convertingAudio: 'Converting to {codec} {br}…', convertingVideo: 'Converting to {codec} {res}p…',
+  errNoUrl: 'Please paste a video link first', errFailed: 'Conversion failed: ', reqFail: 'Request failed: ',
+  stCheckFail: 'Status check failed', verHasNew: ' (new {v})',
+  verCheckFail: 'Check failed: ', verNew: 'New version <b>{v}</b> available (current {cur}), update recommended',
+  verLatest: 'Already the latest version: ', verUnknown: 'Current version: {v}<br>Cannot fetch the latest version (network issue)',
+  confirmUpd: 'Update yt-dlp to the latest version?', upgrading: 'Updating, please wait…',
+  updFail: 'Update failed: ', updOk: 'Updated: {o} → <b>{n}</b>',
+}
+};
+// 自动切换：优先手动选择，否则跟随浏览器语言
+let lang = localStorage.getItem('ytmp3-lang');
+if (lang !== 'zh' && lang !== 'en') {
+  lang = (navigator.language || 'zh').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+}
+function t(k) { return (I18N[lang] && I18N[lang][k]) || I18N.zh[k] || k; }
+function fmt(s, o) { return String(s).replace(/\{(\w+)\}/g, (_, k) => (o[k] !== undefined ? o[k] : '')); }
+function applyLang() {
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  document.title = t('title');
+  $('langZh').classList.toggle('active', lang === 'zh');
+  $('langEn').classList.toggle('active', lang === 'en');
+  if (!$('btnGo').disabled) $('btnGo').textContent = t('btnGo');
+}
+function setLang(l) { lang = l; localStorage.setItem('ytmp3-lang', l); applyLang(); }
+$('langZh').onclick = () => setLang('zh');
+$('langEn').onclick = () => setLang('en');
+let mode = 'audio', curCodec = 'mp3', curBitrate = '320K', curRes = '1080', timer = null;
+function refreshCur() {
+  if (mode === 'audio') {
+    curCodec = 'mp3';
+    curBitrate = $('audioBitrate').value;
+  } else {
+    curCodec = 'mp4';
+    curRes = $('videoRes').value;
+  }
+}
+function setMode(m) {
+  mode = m;
+  $('fAudio').classList.toggle('active', m === 'audio');
+  $('fVideo').classList.toggle('active', m === 'video');
+  refreshCur();
+}
+$('fAudio').onclick = () => setMode('audio');
+$('fVideo').onclick = () => setMode('video');
+$('audioBitrate').onchange = refreshCur;
+$('videoRes').onchange = refreshCur;
+$('btnAgain').onclick = () => location.reload();
+
+const stTxt = s => ({ pending: t('stPending'), fetching: t('stFetching'),
+  downloading: t('stDownloading'), done: t('stDone'), error: t('stError') }[s] || s);
+const stConverting = () => mode === 'audio'
+  ? fmt(t('convertingAudio'), { codec: curCodec.toUpperCase(), br: curBitrate })
+  : fmt(t('convertingVideo'), { codec: curCodec.toUpperCase(), res: curRes });
+
+$('btnGo').onclick = async () => {
+  const url = $('url').value.trim();
+  if (!url) return showErr(t('errNoUrl'));
+  refreshCur();
+  hideErr(); $('dl').style.display = 'none';
+  $('btnGo').disabled = true; $('btnGo').textContent = t('btnWorking');
+  $('prog').style.display = 'block'; setBar(2, t('stPreparing'), '');
+  try {
+    const r = await fetch('/api/convert', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, mode, codec: curCodec,
+                             bitrate: curBitrate, resolution: curRes }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || t('reqFail'));
+    poll(d.job_id);
+  } catch (e) { showErr(e.message); resetBtn(); }
+};
+
+function poll(jobId) {
+  clearInterval(timer);
+  timer = setInterval(async () => {
+    try {
+      const r = await fetch('/api/status/' + jobId);
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || t('stCheckFail'));
+      $('pTitle').textContent = d.title || '…';
+      $('pStatus').textContent = d.status === 'converting' ? stConverting() : stTxt(d.status);
+      setBar(d.progress, null, null);
+      if (d.status === 'done') {
+        clearInterval(timer);
+        setBar(100, null, t('stComplete'));
+        $('prog').style.display = 'none';
+        $('dlLink').href = '/api/download/' + jobId;
+        $('dl').style.display = 'block';
+        resetBtn(t('btnAgain'));
+      } else if (d.status === 'error') {
+        clearInterval(timer);
+        showErr(t('errFailed') + (d.error || ''));
+        resetBtn();
+      } else if (d.status === 'downloading') {
+        // 下载阶段给个动态进度，避免长时间不动
+        const cur = parseFloat($('pBar').style.width) || 15;
+        if (cur < 85) setBar(cur + 3, null, null);
+      }
+    } catch (e) { clearInterval(timer); showErr(e.message); resetBtn(); }
+  }, 1500);
+}
+function setBar(p, t, s) {
+  if (p !== null) $('pBar').style.width = Math.min(100, p) + '%';
+  if (t !== null) $('pTitle').textContent = t;
+  if (s !== null) $('pStatus').textContent = s;
+}
+function showErr(m) { $('err').textContent = m; $('err').style.display = 'block'; }
+function hideErr() { $('err').style.display = 'none'; }
+function resetBtn(txt) { $('btnGo').disabled = false; $('btnGo').textContent = txt || t('btnGo'); }
+
+/* yt-dlp 版本管理 */
+function toast(msg, type, ms) {
+  type = type || 'info'; ms = ms || 4500;
+  const t = document.createElement('div');
+  t.className = 'toast ' + type; t.innerHTML = msg;
+  $('toasts').appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s';
+    setTimeout(() => t.remove(), 300); }, ms);
+}
+function adminBusy(b) { $('btnVer').disabled = b; $('btnUpd').disabled = b; }
+async function loadVer() {
+  try {
+    const r = await fetch('/api/ytdlp/version');
+    const d = await r.json();
+    if (d.installed) $('ytVer').textContent = 'yt-dlp ' + d.installed +
+      (d.updateAvailable ? fmt(t('verHasNew'), { v: d.latest }) : '');
+  } catch (e) { /* 忽略 */ }
+}
+$('btnVer').onclick = async () => {
+  adminBusy(true);
+  try {
+    const r = await fetch('/api/ytdlp/version');
+    const d = await r.json();
+    if (d.error) return toast(t('verCheckFail') + d.error, 'err');
+    $('ytVer').textContent = 'yt-dlp ' + d.installed;
+    if (d.updateAvailable) toast(fmt(t('verNew'), { v: d.latest, cur: d.installed }), 'warn');
+    else if (d.latest) toast(t('verLatest') + d.installed, 'ok');
+    else toast(fmt(t('verUnknown'), { v: d.installed }), 'info');
+  } catch (e) { toast(t('reqFail') + e.message, 'err'); }
+  adminBusy(false);
+};
+$('btnUpd').onclick = async () => {
+  if (!confirm(t('confirmUpd'))) return;
+  adminBusy(true);
+  toast(t('upgrading'), 'info', 15000);
+  try {
+    const r = await fetch('/api/ytdlp/update', { method: 'POST' });
+    const d = await r.json();
+    if (!d.success) { adminBusy(false); return toast(t('updFail') + (d.error || ''), 'err'); }
+    $('ytVer').textContent = 'yt-dlp ' + d.newVersion;
+    if (d.updated) toast(fmt(t('updOk'), { o: d.oldVersion, n: d.newVersion }), 'ok', 6000);
+    else toast(t('verLatest') + d.newVersion, 'ok');
+  } catch (e) { toast(t('reqFail') + e.message, 'err'); }
+  adminBusy(false);
+};
+loadVer();
+applyLang();
+</script>
+</body>
+</html>

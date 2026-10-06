@@ -1,0 +1,10 @@
+services:
+  ytmp3:
+    image: weleone/ytmp3:latest
+    container_name: ytmp3
+    ports:
+      - "8090:8080"
+    environment:
+      - PORT=8080
+      - CLEANUP_AFTER=3600   # 转换文件保留秒数
+    restart: unless-stopped
