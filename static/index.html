@@ -211,12 +211,16 @@ function setMode(m) {
   mode = m;
   $('fAudio').classList.toggle('active', m === 'audio');
   $('fVideo').classList.toggle('active', m === 'video');
+  // 联动变灰：选 MP3 时分辨率不可选，选 MP4 时码率不可选
+  $('audioBitrate').disabled = (m !== 'audio');
+  $('videoRes').disabled = (m !== 'video');
   refreshCur();
 }
 $('fAudio').onclick = () => setMode('audio');
 $('fVideo').onclick = () => setMode('video');
 $('audioBitrate').onchange = refreshCur;
 $('videoRes').onchange = refreshCur;
+setMode('audio');
 $('btnAgain').onclick = () => location.reload();
 
 const stTxt = s => ({ pending: t('stPending'), fetching: t('stFetching'),
